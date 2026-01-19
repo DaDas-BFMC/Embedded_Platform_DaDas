@@ -60,3 +60,11 @@
 #include <utils/taskmanager.hpp>
 /* Header file for the task manager library, which  applies periodically the fun function of it's children*/
 #include <utils/task.hpp>
+/* Header file for the IR camera driver */
+#include <drivers/ircamera.hpp>
+/* Header file for the lane perception */
+#include <brain/laneperception.hpp>
+/* Header file for the PID controller */
+#include <utils/pidcontroller.hpp>
+/* Header file for the lane keeping controller */
+#include <periodics/lanekeeping.hpp>
