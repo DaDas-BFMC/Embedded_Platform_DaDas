@@ -1,0 +1,191 @@
+/**
+ * Lane Keeping System Test Interface
+ * 
+ * This file provides test commands and usage examples for validating
+ * the lane keeping system via serial interface.
+ */
+
+// ============================================================================
+// SERIAL COMMAND REFERENCE
+// ============================================================================
+
+// 1. ENABLE LANE KEEPING WITH SPEED
+//    Command: lanekeeping;1;200
+//    Description: Enables lane keeping with speed = 200 mm/s
+//    Response: "Lane keeping enabled, speed=200"
+
+// 2. DISABLE LANE KEEPING
+//    Command: lanekeeping;0
+//    Description: Disables lane keeping and stops vehicle
+//    Response: "Lane keeping disabled"
+
+// 3. SET PID GAINS
+//    Command: lanekeeping;pid;1.5;0.01;0.5
+//    Description: Sets PID gains (Kp=1.5, Ki=0.01, Kd=0.5)
+//    Response: "PID gains set: Kp=1.50 Ki=0.0100 Kd=0.50"
+
+// 4. ENABLE LANE KEEPING (NO SPEED CHANGE)
+//    Command: lanekeeping;1
+//    Description: Enables lane keeping with previously set speed
+//    Response: "Lane keeping enabled"
+
+// ============================================================================
+// STATUS MESSAGES
+// ============================================================================
+
+// Lane keeping sends periodic status messages:
+//   @lk:1;-25;-38;;
+//   Format: @lk:<detected>;<lane_error>;<steering_angle>;;
+//   - detected: 1 if lane detected, 0 otherwise
+//   - lane_error: Position error from center (-100 to +100)
+//   - steering_angle: Applied steering angle (-250 to +250)
+
+// ============================================================================
+// TEST SEQUENCE
+// ============================================================================
+
+// STEP 1: System Check
+// Send: alive
+// Expected: System responds with acknowledgment
+
+// STEP 2: Set Initial PID Gains (Conservative)
+// Send: lanekeeping;pid;1.0;0.005;0.3
+// Expected: "PID gains set: Kp=1.00 Ki=0.0050 Kd=0.30"
+
+// STEP 3: Enable Lane Keeping at Low Speed
+// Send: lanekeeping;1;100
+// Expected: "Lane keeping enabled, speed=100"
+// Monitor: @lk:1;<error>;<steering>;; messages should appear
+
+// STEP 4: Observe Behavior
+// - Vehicle should center on line
+// - Steering should be smooth without oscillation
+// - Lane error should approach 0
+
+// STEP 5: Increase Speed Gradually
+// Send: lanekeeping;1;150
+// Send: lanekeeping;1;200
+// Monitor: Check for stability at each speed
+
+// STEP 6: Fine-tune PID if Needed
+// If oscillating: Send: lanekeeping;pid;0.8;0.005;0.4
+// If sluggish: Send: lanekeeping;pid;1.5;0.01;0.5
+
+// STEP 7: Emergency Stop
+// Send: lanekeeping;0
+// Expected: Vehicle stops, "Lane keeping disabled"
+
+// ============================================================================
+// EXPECTED BEHAVIOR
+// ============================================================================
+
+// GOOD INDICATORS:
+// - Lane error oscillates around 0 with small amplitude (±10)
+// - Steering commands are smooth (not jerky)
+// - Vehicle stays centered on straight sections
+// - Vehicle smoothly follows curves
+
+// PROBLEM INDICATORS:
+// - Lane error has large oscillations (±50)
+// - Steering commands alternate rapidly between extremes
+// - @lk:0;0;0;; messages (lane not detected)
+// - Vehicle drives off the line
+
+// ============================================================================
+// PID TUNING GUIDELINES
+// ============================================================================
+
+// SYMPTOM: Slow response, doesn't reach center
+// ACTION: Increase Kp by 20% (e.g., 1.0 → 1.2)
+
+// SYMPTOM: Oscillates around center
+// ACTION: Decrease Kp by 20% and increase Kd by 50%
+
+// SYMPTOM: Steady offset from center (always left or right)
+// ACTION: Increase Ki by 100% (e.g., 0.01 → 0.02)
+
+// SYMPTOM: Overshoots then settles
+// ACTION: Increase Kd by 50%
+
+// SYMPTOM: Unstable at high speed
+// ACTION: Reduce speed or use lower Kp at high speeds
+
+// ============================================================================
+// HARDWARE VALIDATION
+// ============================================================================
+
+// IR SENSOR CHECK:
+// 1. Place vehicle over line at center position
+// 2. Center sensor (A3) should detect line (high reading)
+// 3. Side sensors should not detect line (low reading)
+// 4. Expected lane_error: ~0
+
+// 5. Move vehicle left (line under right sensors)
+// 6. Right sensors should detect line
+// 7. Expected lane_error: +50 to +100
+
+// 8. Move vehicle right (line under left sensors)
+// 9. Left sensors should detect line
+// 10. Expected lane_error: -50 to -100
+
+// ============================================================================
+// INTEGRATION WITH OTHER SYSTEMS
+// ============================================================================
+
+// Lane keeping can be used alongside other features:
+// - IMU data is available for advanced control
+// - Battery monitoring continues during operation
+// - Resource monitor tracks system health
+// - All periodic tasks run concurrently
+
+// ============================================================================
+// TROUBLESHOOTING COMMON ISSUES
+// ============================================================================
+
+// ISSUE: No response to lanekeeping command
+// CHECK: 
+// - Serial connection is working (test with "alive" command)
+// - Nucleo board is powered and running
+// - Command syntax is correct
+
+// ISSUE: "Lane keeping enabled" but no movement
+// CHECK:
+// - KL30 mode is active (send "kl;30")
+// - Speed value is non-zero
+// - Motors are properly connected
+// - Lane is detected (@lk:1;...;...)
+
+// ISSUE: Vehicle immediately stops after enabling
+// CHECK:
+// - IR sensors are detecting the line
+// - Threshold calibration is correct
+// - Serial output shows @lk:0;0;0;; (no detection)
+// - Try sensor calibration
+
+// ISSUE: Steering goes to maximum immediately
+// CHECK:
+// - PID gains are too high
+// - Reset to conservative values: lanekeeping;pid;0.5;0.0;0.1
+// - Check sensor readings are valid
+
+// ============================================================================
+// PERFORMANCE METRICS
+// ============================================================================
+
+// TARGET PERFORMANCE:
+// - Lane error: < ±15 at steady state
+// - Steering smoothness: < ±20 degree changes per cycle
+// - Lane detection rate: > 95% on good track
+// - Maximum safe speed: 300-400 mm/s (depends on track)
+// - Response time: < 200ms to center from ±50 error
+
+// ============================================================================
+// SAFETY NOTES
+// ============================================================================
+
+// 1. Always test at low speeds first (50-100 mm/s)
+// 2. Have emergency stop ready (lanekeeping;0 or power off)
+// 3. Test in controlled environment with safe runoff areas
+// 4. Monitor battery level during extended testing
+// 5. Check mechanical connections before each test
+// 6. Verify IR sensors are clean and properly positioned
