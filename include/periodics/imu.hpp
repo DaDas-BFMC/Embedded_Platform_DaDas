@@ -72,6 +72,8 @@ namespace periodics
         private:
             /*I2C init routine */
             virtual void I2C_routine(void);
+            /* Set I2C address and bus callbacks (for auto-detect) */
+            void I2C_routine(u8 i2c_addr);
             /* This API is an example for reading sensor data */
             // s32 bno055_data_readout_template(void);
             /* Run method */
@@ -106,6 +108,8 @@ namespace periodics
             uint8_t m_velocityStationaryCounter;
             uint64_t m_delta_time;
             uint8_t m_period;
+            /** @brief True if BNO055 init succeeded */
+            bool m_bno055_ok;
     }; // class CImu
 
 }; // namespace utils

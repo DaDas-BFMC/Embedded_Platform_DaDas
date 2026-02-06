@@ -55,7 +55,7 @@ periodics::CInstantConsumption g_instantconsumption(g_baseTick * 1000, A2, g_rpi
 // // It's a task for sending periodically the battery voltage, so to notice when discharging
 periodics::CTotalVoltage g_totalvoltage(g_baseTick*3000, A4, g_rpi);
 
-// It's a task for sending periodically the IMU values
+// It's a task for sending periodically the IMU values (uses board default I2C_SDA, I2C_SCL)
 periodics::CImu g_imu(g_baseTick*150, g_rpi, I2C_SDA, I2C_SCL);
 
 //PIN for a motor speed in ms, inferior and superior limit
