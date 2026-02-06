@@ -69,6 +69,7 @@ namespace periodics{
         , m_velocityZ(0)
         , m_velocityStationaryCounter(0)
         , m_delta_time(f_period.count())
+        , m_bno055_ok(false)
     {
         if(m_delta_time < 150){
             setNewPeriod(150);
@@ -87,29 +88,35 @@ namespace periodics{
         *  i2c_instance variable member will be initialized with the actual I2C of the target board.
         *---------------------------------------------------------------------------------------------------*/      
         i2c_instance = new I2C(SDA, SCL);
-        i2c_instance->frequency(400000);
+        /* 100 kHz for more reliable I2C with wires; BNO055 supports up to 400 kHz */
+        i2c_instance->frequency(100000);
 
-        ThisThread::sleep_for(chrono::milliseconds(300));
+        /* BNO055 can take up to 650 ms after power-up before it responds */
+        ThisThread::sleep_for(chrono::milliseconds(700));
 
-        /*  Based on the user need configure I2C interface.
-        *  It is example code to explain how to use the bno055 API*/
-        I2C_routine();
-
-        /*--------------------------------------------------------------------------*
-        *  This API used to assign the value/reference of
-        *  the following parameters
-        *  I2C address
-        *  Bus Write
-        *  Bus read
-        *  Chip id
-        *  Page id
-        *  Accel revision id
-        *  Mag revision id
-        *  Gyro revision id
-        *  Boot loader revision id
-        *  Software revision id
-        *-------------------------------------------------------------------------*/
+        /* Try BNO055 at I2C address 0x29 first (ADR to 3.3V), then 0x28 (ADR to GND) */
+        I2C_routine(BNO055_I2C_ADDR2);
         comres = bno055_init(&bno055);
+        if (comres != BNO055_SUCCESS) {
+            I2C_routine(BNO055_I2C_ADDR1);
+            comres = bno055_init(&bno055);
+        }
+        /* Retry once after delay in case sensor was still starting */
+        if (comres != BNO055_SUCCESS) {
+            ThisThread::sleep_for(chrono::milliseconds(200));
+            I2C_routine(BNO055_I2C_ADDR2);
+            comres = bno055_init(&bno055);
+            if (comres != BNO055_SUCCESS) {
+                I2C_routine(BNO055_I2C_ADDR1);
+                comres = bno055_init(&bno055);
+            }
+        }
+
+        if (comres != BNO055_SUCCESS) {
+            return;
+        }
+
+        m_bno055_ok = true;
 
         /*  For initializing the BNO sensor it is required to the operation mode
         * of the sensor as NORMAL
@@ -663,11 +670,15 @@ namespace periodics{
      *--------------------------------------------------------------------------*/
     void CImu::I2C_routine(void)
     {
+        I2C_routine(BNO055_I2C_ADDR2);
+    }
+
+    void CImu::I2C_routine(u8 i2c_addr)
+    {
         bno055.bus_write = BNO055_I2C_bus_write;
         bno055.bus_read = BNO055_I2C_bus_read;
         bno055.delay_msec = BNO055_delay_msek;
-        bno055.dev_addr = BNO055_I2C_ADDR2 << 1;
-        // bno055.dev_addr = BNO055_I2C_ADDR1 << 1;
+        bno055.dev_addr = i2c_addr << 1;
 
         ThisThread::sleep_for(chrono::milliseconds(300));
     }
@@ -703,6 +714,7 @@ namespace periodics{
     void CImu::_run()
     {
         if(!m_isActive) return;
+        if (!m_bno055_ok) return;
         
         char buffer[_100_chars];
         s8 comres = BNO055_SUCCESS;
