@@ -38,6 +38,8 @@
 #include <periodics/blinker.hpp>
 /* Header file for the IMU functionality */
 #include <periodics/imu.hpp>
+/* Header file for the AS5600 encoder periodic functionality */
+#include <periodics/as5600_encoder.hpp>
 /* Header file for the instant consumption measurement functionality */
 #include <periodics/instantconsumption.hpp>
 /* Header file for the total voltage measurement functionality */
@@ -60,3 +62,5 @@
 #include <utils/taskmanager.hpp>
 /* Header file for the task manager library, which  applies periodically the fun function of it's children*/
 #include <utils/task.hpp>
+/* Header file for the As5600 functionality */
+#include <drivers/as5600.hpp>

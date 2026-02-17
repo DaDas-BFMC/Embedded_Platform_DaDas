@@ -58,6 +58,9 @@ periodics::CTotalVoltage g_totalvoltage(g_baseTick*3000, A4, g_rpi);
 // It's a task for sending periodically the IMU values (uses board default I2C_SDA, I2C_SCL)
 periodics::CImu g_imu(g_baseTick*150, g_rpi, I2C_SDA, I2C_SCL);
 
+// It's a task for sending periodically the AS5600 encoder values (I2C3: PC_9, PA_8)
+periodics::CAs5600Encoder g_as5600_encoder(g_baseTick*150, g_rpi);
+
 //PIN for a motor speed in ms, inferior and superior limit
 drivers::CSpeedingMotor g_speedingDriver(D3, -500, 500); //speed in mm/s
 
@@ -76,7 +79,6 @@ periodics::CPowermanager g_powermanager(g_baseTick * 100, g_klmanager, g_rpi, g_
 brain::CBatterymanager g_batteryManager(dummy_value);
 
 /* USER NEW COMPONENT BEGIN */
-
 /* USER NEW COMPONENT END */
 
 // Map for redirecting messages with the key and the callback functions. If the message key equals to one of the enumerated keys, than it will be applied the paired callback function.
@@ -105,6 +107,7 @@ utils::CTask* g_taskList[] = {
     &g_instantconsumption,
     &g_totalvoltage,
     &g_imu,
+    &g_as5600_encoder,
     &g_robotstatemachine,
     &g_serialMonitor,
     &g_powermanager,

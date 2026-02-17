@@ -16,10 +16,10 @@ def create_component(category, component_name, want_serial_callback, project_roo
     
     existing_categories = ["brain", "drivers", "periodics", "utils"]
 
-    path_EmbeddedPlatform = str(os.getcwd())
-    last_backslash = str(os.getcwd())[::-1].index('\\')
-    filename_Emb = path_EmbeddedPlatform[:len(path_EmbeddedPlatform)-last_backslash]
-    filename_CMake = path_EmbeddedPlatform[:len(path_EmbeddedPlatform)-last_backslash] + "CMakeLists.txt"
+    # Project root = directory that contains this script's parent (e.g. Embedded_Platform_DaDas)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    filename_Emb = os.path.dirname(script_dir)
+    filename_CMake = os.path.join(filename_Emb, "CMakeLists.txt")
 
     if category not in existing_categories:
         last_include = -1
