@@ -106,7 +106,7 @@ utils::CTask* g_taskList[] = {
     &g_blinker,
     &g_instantconsumption,
     &g_totalvoltage,
-    &g_imu,
+    // &g_imu,  // disabled: don't send IMU data for now
     &g_as5600_encoder,
     &g_robotstatemachine,
     &g_serialMonitor,

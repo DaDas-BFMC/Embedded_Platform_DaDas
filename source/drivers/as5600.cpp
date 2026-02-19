@@ -5,7 +5,7 @@ namespace drivers
     CAs5600::CAs5600(PinName sda, PinName scl, int frequency_hz, PinName dir_pin)
         : m_i2c(sda, scl)
         , m_addr_8bit(kI2cAddress << 1)
-        , m_dir_pin(dir_pin, 0)
+        , m_dir_pin(dir_pin, 1)   // DIR high
     {
         m_i2c.frequency(frequency_hz);
     }

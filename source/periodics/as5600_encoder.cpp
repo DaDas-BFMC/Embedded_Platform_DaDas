@@ -1,5 +1,12 @@
 #include <periodics/as5600_encoder.hpp>
 
+// Wheel: D=62mm, 32768 ticks/wheel rev. mm/tick = (pi*62)/32768.
+static constexpr int32_t kTicksPerWheelRev = 32768;
+static constexpr int32_t kWheelDiameterMm = 62;
+// (pi*62)*1000 for integer mm/s: speed_mm_s = (velocity * 194778) / 32768 / 1000
+static constexpr int64_t kMmPerTickNum = 194778;  // (pi*62)*1000
+static constexpr int32_t kMmPerTickDen = 32768;
+
 namespace periodics
 {
     CAs5600Encoder::CAs5600Encoder(std::chrono::milliseconds f_period, UnbufferedSerial& f_serial)
@@ -21,9 +28,9 @@ namespace periodics
         if (!m_isOk) return;
         if (!m_tracker.update()) return;
 
-        uint16_t raw = m_tracker.getLastRaw();
         int32_t total = m_tracker.getTotalTicks();
         int32_t velocity = m_tracker.getVelocityTicksPerSec();
+        int32_t speed_mm_s = (int32_t)((int64_t)velocity * kMmPerTickNum / kMmPerTickDen / 1000);
         bool md = m_sensor.magnetDetected();
 
         uint8_t agc = 0;
@@ -35,10 +42,9 @@ namespace periodics
         int len = snprintf(
             buffer,
             sizeof(buffer),
-            "@as5600:%u;%ld;%ld;%u;%u;;\r\n",
-            static_cast<unsigned>(raw),
+            "@as5600:%ld;%ld;%u;%u;;\r\n",
+            static_cast<long>(speed_mm_s),
             static_cast<long>(total),
-            static_cast<long>(velocity),
             static_cast<unsigned>(md ? 1 : 0),
             static_cast<unsigned>(agc)
         );

@@ -1,5 +1,7 @@
 .mbedbuild
-cmake_build/*
+mbed-tools.ps1
+mbed-tools.bat
+cmake_build/
 !cmake_build/NUCLEO_F401RE/develop/GCC_ARM/robot_car.bin
 mbed-os/
 .vscode
