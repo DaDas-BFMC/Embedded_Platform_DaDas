@@ -700,11 +700,8 @@ namespace periodics{
     * 
     * \note If there are any issues reading from the BNO055 sensor, the method will exit early without sending data.
     */
-    void CImu::_run()
+    bool CImu::readAndFillSnapshot(ImuSnapshot& out)
     {
-        if(!m_isActive) return;
-        
-        char buffer[_100_chars];
         s8 comres = BNO055_SUCCESS;
 
         s16 s16_euler_h_raw = BNO055_INIT_VALUE;
@@ -720,61 +717,41 @@ namespace periodics{
         s16 s16_gyro_z_raw = BNO055_INIT_VALUE;
 
         comres += bno055_read_euler_h(&s16_euler_h_raw);
-
-        if(comres != BNO055_SUCCESS) return;
+        if(comres != BNO055_SUCCESS) return false;
 
         comres += bno055_read_euler_p(&s16_euler_p_raw);
-
-        if(comres != BNO055_SUCCESS) return;
+        if(comres != BNO055_SUCCESS) return false;
 
         comres += bno055_read_euler_r(&s16_euler_r_raw);
+        if(comres != BNO055_SUCCESS) return false;
 
-        if(comres != BNO055_SUCCESS) return;
-
-        s16 s16_euler_h_deg = (s16_euler_h_raw * BNO055_EULER_SCALE) / BNO055_EULER_DIV_DEG_int;
-        s16 s16_euler_p_deg = (s16_euler_p_raw * BNO055_EULER_SCALE) / BNO055_EULER_DIV_DEG_int;
-        s16 s16_euler_r_deg = (s16_euler_r_raw * BNO055_EULER_SCALE) / BNO055_EULER_DIV_DEG_int;
+        out.euler_h_deg = (s16_euler_h_raw * BNO055_EULER_SCALE) / BNO055_EULER_DIV_DEG_int;
+        out.euler_p_deg = (s16_euler_p_raw * BNO055_EULER_SCALE) / BNO055_EULER_DIV_DEG_int;
+        out.euler_r_deg = (s16_euler_r_raw * BNO055_EULER_SCALE) / BNO055_EULER_DIV_DEG_int;
 
         comres = bno055_read_linear_accel_x(&s16_linear_accel_x_raw);
-
-        if(comres != BNO055_SUCCESS) return;
+        if(comres != BNO055_SUCCESS) return false;
 
         comres = bno055_read_linear_accel_y(&s16_linear_accel_y_raw);
-
-        if(comres != BNO055_SUCCESS) return;
+        if(comres != BNO055_SUCCESS) return false;
 
         comres = bno055_read_linear_accel_z(&s16_linear_accel_z_raw);
+        if(comres != BNO055_SUCCESS) return false;
 
-        if(comres != BNO055_SUCCESS) return;
+        out.linear_accel_x_msq = (s16_linear_accel_x_raw * precision_scaling_factor) / BNO055_LINEAR_ACCEL_DIV_MSQ_int;
+        out.linear_accel_y_msq = (s16_linear_accel_y_raw * precision_scaling_factor) / BNO055_LINEAR_ACCEL_DIV_MSQ_int;
+        out.linear_accel_z_msq = (s16_linear_accel_z_raw * precision_scaling_factor) / BNO055_LINEAR_ACCEL_DIV_MSQ_int;
 
-        s32 s16_linear_accel_x_msq = (s16_linear_accel_x_raw * precision_scaling_factor) / BNO055_LINEAR_ACCEL_DIV_MSQ_int;
-        s32 s16_linear_accel_y_msq = (s16_linear_accel_y_raw * precision_scaling_factor) / BNO055_LINEAR_ACCEL_DIV_MSQ_int;
-        s32 s16_linear_accel_z_msq = (s16_linear_accel_z_raw * precision_scaling_factor) / BNO055_LINEAR_ACCEL_DIV_MSQ_int;
+        if (bno055_read_gyro_x(&s16_gyro_x_raw) != BNO055_SUCCESS) s16_gyro_x_raw = 0;
+        if (bno055_read_gyro_y(&s16_gyro_y_raw) != BNO055_SUCCESS) s16_gyro_y_raw = 0;
+        if (bno055_read_gyro_z(&s16_gyro_z_raw) != BNO055_SUCCESS) s16_gyro_z_raw = 0;
 
-        if (bno055_read_gyro_x(&s16_gyro_x_raw) != BNO055_SUCCESS)
+        out.gyro_x_dps = (s16_gyro_x_raw * BNO055_EULER_GYRO_SCALE) / BNO055_GYRO_DIV_DPS_int;
+        out.gyro_y_dps = (s16_gyro_y_raw * BNO055_EULER_GYRO_SCALE) / BNO055_GYRO_DIV_DPS_int;
+        out.gyro_z_dps = (s16_gyro_z_raw * BNO055_EULER_GYRO_SCALE) / BNO055_GYRO_DIV_DPS_int;
+
+        if((-110 <= out.linear_accel_x_msq && out.linear_accel_x_msq <= 110) && (-110 <= out.linear_accel_y_msq && out.linear_accel_y_msq <= 110))
         {
-            s16_gyro_x_raw = 0;
-        }
-
-        if (bno055_read_gyro_y(&s16_gyro_y_raw) != BNO055_SUCCESS)
-        {
-            s16_gyro_y_raw = 0;
-        }
-
-        if (bno055_read_gyro_z(&s16_gyro_z_raw) != BNO055_SUCCESS)
-        {
-            s16_gyro_z_raw = 0;
-        }
-
-        s16 s16_gyro_x_dps = (s16_gyro_x_raw * BNO055_EULER_GYRO_SCALE) / BNO055_GYRO_DIV_DPS_int;
-        s16 s16_gyro_y_dps = (s16_gyro_y_raw * BNO055_EULER_GYRO_SCALE) / BNO055_GYRO_DIV_DPS_int;
-        s16 s16_gyro_z_dps = (s16_gyro_z_raw * BNO055_EULER_GYRO_SCALE) / BNO055_GYRO_DIV_DPS_int;
-
-        if((-110 <= s16_linear_accel_x_msq && s16_linear_accel_x_msq <= 110) && (-110 <= s16_linear_accel_y_msq && s16_linear_accel_y_msq <= 110))
-        {
-            m_velocityX += 0 * m_delta_time; // Δt = m_delta_time
-            m_velocityY += 0 * m_delta_time;
-            m_velocityZ += 0 * m_delta_time;
             m_velocityStationaryCounter += 1;
             if (m_velocityStationaryCounter == 10)
             {
@@ -783,36 +760,47 @@ namespace periodics{
                 m_velocityZ = 0;
                 m_velocityStationaryCounter = 0;
             }
-            
         }
-        else{
-            m_velocityX += (s16_linear_accel_x_msq * (uint16_t)m_delta_time) / 1000; // Δt = m_delta_time
-            m_velocityY += (s16_linear_accel_y_msq * (uint16_t)m_delta_time) / 1000;
-            m_velocityZ += (s16_linear_accel_z_msq * (uint16_t)m_delta_time) / 1000;
+        else
+        {
+            m_velocityX += (out.linear_accel_x_msq * (uint16_t)m_delta_time) / 1000;
+            m_velocityY += (out.linear_accel_y_msq * (uint16_t)m_delta_time) / 1000;
+            m_velocityZ += (out.linear_accel_z_msq * (uint16_t)m_delta_time) / 1000;
             m_velocityStationaryCounter = 0;
         }
 
-        /* Euler: scale 10, 1 decimal. Gyro: scale 100, 2 decimals. Others: scale 1000, 3 decimals. _FMT_SIGN avoids losing sign for small negatives. */
+        out.velocityX = m_velocityX;
+        out.velocityY = m_velocityY;
+        out.velocityZ = m_velocityZ;
+        return true;
+    }
+
+    void CImu::_run()
+    {
+        if(!m_isActive) return;
+
+        ImuSnapshot snap;
+        if (!readAndFillSnapshot(snap)) return;
+
+        char buffer[_100_chars];
         #define _FMT_SIGN(v, div)  (((v) < 0 && (v) / (div) == 0) ? "-" : "")
         int message_len = snprintf(buffer, sizeof(buffer),
             "@imu:%s%d.%01d;%s%d.%01d;%s%d.%01d;%s%d.%03d;%s%d.%03d;%s%d.%03d;%s%d.%03d;%s%d.%03d;%s%d.%03d;%s%d.%02d;%s%d.%02d;%s%d.%02d;;\r\n",
-            _FMT_SIGN(s16_euler_r_deg, 10),  s16_euler_r_deg/10, abs(s16_euler_r_deg%10),
-            _FMT_SIGN(s16_euler_p_deg, 10),  s16_euler_p_deg/10, abs(s16_euler_p_deg%10),
-            _FMT_SIGN(s16_euler_h_deg, 10),  s16_euler_h_deg/10, abs(s16_euler_h_deg%10),
-            _FMT_SIGN(m_velocityX, 1000),     m_velocityX/1000, abs(m_velocityX%1000),
-            _FMT_SIGN(m_velocityY, 1000),     m_velocityY/1000, abs(m_velocityY%1000),
-            _FMT_SIGN(m_velocityZ, 1000),     m_velocityZ/1000, abs(m_velocityZ%1000),
-            _FMT_SIGN(s16_linear_accel_x_msq, 1000), s16_linear_accel_x_msq/1000, abs(s16_linear_accel_x_msq%1000),
-            _FMT_SIGN(s16_linear_accel_y_msq, 1000), s16_linear_accel_y_msq/1000, abs(s16_linear_accel_y_msq%1000),
-            _FMT_SIGN(s16_linear_accel_z_msq, 1000), s16_linear_accel_z_msq/1000, abs(s16_linear_accel_z_msq%1000),
-            _FMT_SIGN(s16_gyro_x_dps, 100),   s16_gyro_x_dps/100, abs(s16_gyro_x_dps%100),
-            _FMT_SIGN(s16_gyro_y_dps, 100),   s16_gyro_y_dps/100, abs(s16_gyro_y_dps%100),
-            _FMT_SIGN(s16_gyro_z_dps, 100),   s16_gyro_z_dps/100, abs(s16_gyro_z_dps%100));
+            _FMT_SIGN(snap.euler_r_deg, 10),  snap.euler_r_deg/10, abs(snap.euler_r_deg%10),
+            _FMT_SIGN(snap.euler_p_deg, 10),  snap.euler_p_deg/10, abs(snap.euler_p_deg%10),
+            _FMT_SIGN(snap.euler_h_deg, 10),  snap.euler_h_deg/10, abs(snap.euler_h_deg%10),
+            _FMT_SIGN(snap.velocityX, 1000),     snap.velocityX/1000, abs(snap.velocityX%1000),
+            _FMT_SIGN(snap.velocityY, 1000),     snap.velocityY/1000, abs(snap.velocityY%1000),
+            _FMT_SIGN(snap.velocityZ, 1000),     snap.velocityZ/1000, abs(snap.velocityZ%1000),
+            _FMT_SIGN(snap.linear_accel_x_msq, 1000), snap.linear_accel_x_msq/1000, abs(snap.linear_accel_x_msq%1000),
+            _FMT_SIGN(snap.linear_accel_y_msq, 1000), snap.linear_accel_y_msq/1000, abs(snap.linear_accel_y_msq%1000),
+            _FMT_SIGN(snap.linear_accel_z_msq, 1000), snap.linear_accel_z_msq/1000, abs(snap.linear_accel_z_msq%1000),
+            _FMT_SIGN(snap.gyro_x_dps, 100),   snap.gyro_x_dps/100, abs(snap.gyro_x_dps%100),
+            _FMT_SIGN(snap.gyro_y_dps, 100),   snap.gyro_y_dps/100, abs(snap.gyro_y_dps%100),
+            _FMT_SIGN(snap.gyro_z_dps, 100),   snap.gyro_z_dps/100, abs(snap.gyro_z_dps%100));
         #undef _FMT_SIGN
         if (message_len <= 0 || message_len >= static_cast<int>(sizeof(buffer)))
-        {
             return;
-        }
 
         m_serial.write(buffer, message_len);
     }

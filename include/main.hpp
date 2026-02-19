@@ -38,8 +38,8 @@
 #include <periodics/blinker.hpp>
 /* Header file for the IMU functionality */
 #include <periodics/imu.hpp>
-/* Header file for the AS5600 encoder periodic functionality */
-#include <periodics/as5600_encoder.hpp>
+/* Header file for the combined IMU + encoder periodic task */
+#include <periodics/imu_encoder.hpp>
 /* Header file for the instant consumption measurement functionality */
 #include <periodics/instantconsumption.hpp>
 /* Header file for the total voltage measurement functionality */

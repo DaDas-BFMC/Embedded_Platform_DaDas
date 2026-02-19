@@ -44,6 +44,23 @@
 
 namespace periodics
 {
+    /** Snapshot of IMU data for combined framing (e.g. with encoder). */
+    struct ImuSnapshot
+    {
+        s16 euler_r_deg;
+        s16 euler_p_deg;
+        s16 euler_h_deg;
+        s32 velocityX;
+        s32 velocityY;
+        s32 velocityZ;
+        s32 linear_accel_x_msq;
+        s32 linear_accel_y_msq;
+        s32 linear_accel_z_msq;
+        s16 gyro_x_dps;
+        s16 gyro_y_dps;
+        s16 gyro_z_dps;
+    };
+
    /**
     * @brief Class imu 
     * 
@@ -69,6 +86,8 @@ namespace periodics
             static void BNO055_delay_msek(u32 msek);
             /* Serial callback implementation */
             void serialCallbackIMUcommand(char const * a, char * b);
+            /** Fill snapshot from current BNO055 read and velocity state; returns true on success. */
+            bool readAndFillSnapshot(ImuSnapshot& out);
         private:
             /*I2C init routine */
             virtual void I2C_routine(void);

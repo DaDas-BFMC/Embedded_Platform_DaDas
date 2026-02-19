@@ -55,11 +55,11 @@ periodics::CInstantConsumption g_instantconsumption(g_baseTick * 1000, A2, g_rpi
 // // It's a task for sending periodically the battery voltage, so to notice when discharging
 periodics::CTotalVoltage g_totalvoltage(g_baseTick*3000, A4, g_rpi);
 
-// It's a task for sending periodically the IMU values (uses board default I2C_SDA, I2C_SCL)
+// IMU (BNO055) on board default I2C; used for init and for "imu" serial callback / KL manager.
 periodics::CImu g_imu(g_baseTick*150, g_rpi, I2C_SDA, I2C_SCL);
 
-// It's a task for sending periodically the AS5600 encoder values (I2C3: PC_9, PA_8)
-periodics::CAs5600Encoder g_as5600_encoder(g_baseTick*20, g_rpi);
+// Combined task: samples IMU + AS5600 encoder, sends one frame with IMU data + EMA speed; totalTick; md; agc.
+periodics::CImuEncoder g_imuEncoder(g_baseTick*150, g_rpi, g_imu);
 
 //PIN for a motor speed in ms, inferior and superior limit
 drivers::CSpeedingMotor g_speedingDriver(D3, -500, 500); //speed in mm/s
@@ -106,8 +106,7 @@ utils::CTask* g_taskList[] = {
     &g_blinker,
     &g_instantconsumption,
     &g_totalvoltage,
-    // &g_imu,  // disabled: don't send IMU data for now
-    &g_as5600_encoder,
+    &g_imuEncoder,
     &g_robotstatemachine,
     &g_serialMonitor,
     &g_powermanager,
