@@ -25,6 +25,9 @@ namespace periodics
 
     void CAs5600Encoder::_run()
     {
+        static float ema_speed = 0.0f;
+        constexpr float alpha = 0.2f; // EMA smoothing factor (adjust as needed)
+
         if (!m_isOk) return;
         if (!m_tracker.update()) return;
 
@@ -32,6 +35,9 @@ namespace periodics
         int32_t velocity = m_tracker.getVelocityTicksPerSec();
         int32_t speed_mm_s = (int32_t)((int64_t)velocity * kMmPerTickNum / kMmPerTickDen / 1000);
         bool md = m_sensor.magnetDetected();
+
+        // Apply EMA filter to computed speed
+        ema_speed = alpha * speed_mm_s + (1.0f - alpha) * ema_speed;
 
         uint8_t agc = 0;
         if (!m_sensor.readAgc(agc)) {
@@ -42,11 +48,12 @@ namespace periodics
         int len = snprintf(
             buffer,
             sizeof(buffer),
-            "@as5600:%ld;%ld;%u;%u;;\r\n",
+            "@as5600:%ld;%ld;%u;%u;%ld;;\r\n",
             static_cast<long>(speed_mm_s),
             static_cast<long>(total),
             static_cast<unsigned>(md ? 1 : 0),
-            static_cast<unsigned>(agc)
+            static_cast<unsigned>(agc),
+            static_cast<long>(ema_speed)
         );
 
         if (len <= 0 || len >= static_cast<int>(sizeof(buffer))) return;

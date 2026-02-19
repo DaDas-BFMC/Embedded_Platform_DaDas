@@ -59,7 +59,7 @@ periodics::CTotalVoltage g_totalvoltage(g_baseTick*3000, A4, g_rpi);
 periodics::CImu g_imu(g_baseTick*150, g_rpi, I2C_SDA, I2C_SCL);
 
 // It's a task for sending periodically the AS5600 encoder values (I2C3: PC_9, PA_8)
-periodics::CAs5600Encoder g_as5600_encoder(g_baseTick*150, g_rpi);
+periodics::CAs5600Encoder g_as5600_encoder(g_baseTick*20, g_rpi);
 
 //PIN for a motor speed in ms, inferior and superior limit
 drivers::CSpeedingMotor g_speedingDriver(D3, -500, 500); //speed in mm/s
