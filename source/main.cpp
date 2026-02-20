@@ -96,6 +96,8 @@ drivers::CSerialMonitor::CSerialSubscriberMap g_serialMonitorSubscribers = {
     {"kl",             mbed::callback(&g_klmanager,         &brain::CKlmanager::serialCallbackKLCommand)},
     {"batteryCapacity",mbed::callback(&g_batteryManager,    &brain::CBatterymanager::serialCallbackBATTERYCommand)},
     {"resourceMonitor",mbed::callback(&g_resourceMonitor,   &periodics::CResourcemonitor::serialCallbackRESMONCommand)},
+    {"speedCalib",     mbed::callback(&g_imuEncoder,        &periodics::CImuEncoder::serialCallbackSpeedCalib)},
+    {"calibOutput",   mbed::callback(&g_imuEncoder,        &periodics::CImuEncoder::serialCallbackCalibOutput)},
 };
 
 // Create the serial monitor object, which decodes, redirects the messages and transmits the responses.

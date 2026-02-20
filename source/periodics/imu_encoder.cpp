@@ -11,6 +11,34 @@ static constexpr int64_t kMmPerTickNum = 194778;  // (pi*62)*1000
 
 namespace periodics
 {
+    float CImuEncoder::s_speedCalibScale = 1.0f;
+
+    void CImuEncoder::serialCallbackSpeedCalib(char const* message, char* response)
+    {
+        float scale = 1.0f;
+        int n = std::sscanf(message, "%f", &scale);
+        if (n != 1 || scale < 0.5f || scale > 2.0f)
+        {
+            std::sprintf(response, "syntax error");
+            return;
+        }
+        s_speedCalibScale = scale;
+        std::sprintf(response, "%.4f", scale);
+    }
+
+    void CImuEncoder::serialCallbackCalibOutput(char const* message, char* response)
+    {
+        unsigned val = 0;
+        int n = std::sscanf(message, "%u", &val);
+        if (n != 1)
+        {
+            std::sprintf(response, "syntax error");
+            return;
+        }
+        bool_globalsV_calibOutput = (val != 0);
+        std::sprintf(response, "%d", bool_globalsV_calibOutput ? 1 : 0);
+    }
+
     CImuEncoder::CImuEncoder(
         std::chrono::milliseconds f_period,
         UnbufferedSerial& f_serial,
@@ -39,10 +67,6 @@ namespace periodics
         if (!bool_globalsV_imu_isActive)
             return;
 
-        periodics::ImuSnapshot snap;
-        if (!m_imu.readAndFillSnapshot(snap))
-            return;
-
         int32_t totalTick = 0;
         int32_t speed_mm_s = 0;
         unsigned md = 0;
@@ -52,6 +76,7 @@ namespace periodics
             totalTick = m_encoderTracker.getTotalTicks();
             int32_t velocity = m_encoderTracker.getVelocityTicksPerSec();
             speed_mm_s = (int32_t)((int64_t)velocity * kMmPerTickNum / kMmPerTickDen / 1000);
+            speed_mm_s = (int32_t)(static_cast<float>(speed_mm_s) * s_speedCalibScale);
             m_emaSpeed = kEmaAlpha * static_cast<float>(speed_mm_s) + (1.0f - kEmaAlpha) * m_emaSpeed;
             md = m_encoderSensor.magnetDetected() ? 1 : 0;
             uint8_t agcVal = 0;
@@ -61,6 +86,20 @@ namespace periodics
         }
 
         int32_t speed_ema_int = (int32_t)m_emaSpeed;
+
+        if (bool_globalsV_calibOutput) {
+            /* Calibration test: send only encoder data to reduce serial load and latency. */
+            char buffer[64];
+            int len = snprintf(buffer, sizeof(buffer), "@enc:%ld;%ld;%u;%u;;\r\n",
+                (long)speed_ema_int, (long)totalTick, md, agc);
+            if (len > 0 && len < static_cast<int>(sizeof(buffer)))
+                m_serial.write(buffer, len);
+            return;
+        }
+
+        periodics::ImuSnapshot snap;
+        if (!m_imu.readAndFillSnapshot(snap))
+            return;
 
         char buffer[256];
         int len = snprintf(buffer, sizeof(buffer),

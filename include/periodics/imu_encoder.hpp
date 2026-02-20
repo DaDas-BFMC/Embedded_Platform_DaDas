@@ -28,7 +28,13 @@ namespace periodics
         );
         ~CImuEncoder();
 
+        /** Serial callback for #speedCalib:scale;; – sets empirical speed scale (default 1.0). */
+        void serialCallbackSpeedCalib(char const* message, char* response);
+        /** Serial callback for #calibOutput:1;; / #calibOutput:0;; – encoder-only output for calibration test. */
+        void serialCallbackCalibOutput(char const* message, char* response);
+
     private:
+        static float s_speedCalibScale;
         virtual void _run();
 
         UnbufferedSerial& m_serial;

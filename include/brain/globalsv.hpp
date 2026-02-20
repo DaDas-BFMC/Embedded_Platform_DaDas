@@ -61,5 +61,7 @@ extern bool bool_globalsV_battery_isActive;
 extern bool bool_globalsV_resource_isActive;
 extern bool bool_globalsV_ShuttedDown;
 extern bool bool_globalsV_warningFlag;
+/** When true, IMU+encoder task sends only @enc:... (encoder data) for calibration test. */
+extern bool bool_globalsV_calibOutput;
 
 #endif // GLOBALSV_HPP
