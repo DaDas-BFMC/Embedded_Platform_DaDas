@@ -70,9 +70,9 @@ namespace periodics{
         , m_velocityStationaryCounter(0)
         , m_delta_time(f_period.count())
     {
-        if(m_delta_time < 150){
-            setNewPeriod(150);
-            m_delta_time = 150;
+        if(m_delta_time < 50){
+            setNewPeriod(50);
+            m_delta_time = 50;
         }
         
         s32 comres = BNO055_ERROR;
